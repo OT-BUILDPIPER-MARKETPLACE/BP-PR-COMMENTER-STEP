@@ -35,9 +35,12 @@ WORKDIR /home/buildpiper/app
 
 COPY --chown=buildpiper:buildpiper build.sh .
 COPY --chown=buildpiper:buildpiper git_bulid_login.sh .
+COPY --chown=buildpiper:buildpiper custom_comment.sh .
+COPY --chown=buildpiper:buildpiper report_comment.sh .
+
 COPY --chown=buildpiper:buildpiper BP-BASE-SHELL-STEPS /opt/buildpiper/shell-functions/
 
-RUN chmod +x build.sh
+RUN chmod +x *.sh
 
 USER buildpiper
 
