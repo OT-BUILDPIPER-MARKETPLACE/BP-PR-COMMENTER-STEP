@@ -8,6 +8,7 @@ if [ "$DEBUG" = true ]; then
   set -x
 fi
 
+custom_comment() {
 
 COMMIT_SHA=$(jq -r '.environment_variables.COMMIT_SHA' /bp/execution_dir/$GLOBAL_TASK_ID/cloning_repository_output.json)
 REPO_NAME=$(jq -r '.environment_variables.CODEBASE_DIR' /bp/execution_dir/$GLOBAL_TASK_ID/cloning_repository_output.json)
@@ -15,8 +16,6 @@ BUILD_NUMBER=$(jq -r '.build_number' /bp/data/environment_build)
 TARGET_URL="$DNS_URL/logs?global_task_id=$GLOBAL_TASK_ID"
 
 sleep $SLEEP_DURATION
-
-custom_comment() {
 
 COMMENT="${CUSTOM_MESSAGE} 
 
@@ -86,3 +85,4 @@ if [ "$SCM_TYPE" = "github" ]; then
 fi
 
 saveTaskStatus ${TASK_STATUS} ${ACTIVITY_SUB_TASK_CODE}
+}

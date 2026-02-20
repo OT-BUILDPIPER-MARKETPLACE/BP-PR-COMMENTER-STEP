@@ -22,11 +22,11 @@ build_login_scm
 case "$ACTION" in
   custom)
     logInfoMessage "Selected action: $ACTION"
-    ./custom_comment.sh
+    custom_comment
     ;;
   report)
     logInfoMessage "Selected action: $ACTION"
-    ./report_comment.sh
+    report_comment
     ;;
   *)
     logInfoMessage "Usage: ACTION must be {custom|report}"

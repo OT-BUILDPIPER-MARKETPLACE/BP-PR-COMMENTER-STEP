@@ -7,6 +7,7 @@ source /opt/buildpiper/shell-functions/functions.sh
 if [ "$DEBUG" = true ]; then
   set -x
 fi
+report_comment() {
 
 RESULT_JSON="/bp/execution_dir/$GLOBAL_TASK_ID/summary.json"
 IMAGE_CSV_FILE="/bp/execution_dir/$GLOBAL_TASK_ID/trivy_image.csv"
@@ -167,3 +168,4 @@ if [ "$SCM_TYPE" = "github" ]; then
 fi
 
 saveTaskStatus ${TASK_STATUS} ${ACTIVITY_SUB_TASK_CODE}
+}
