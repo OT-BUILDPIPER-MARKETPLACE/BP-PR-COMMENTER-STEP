@@ -20,11 +20,11 @@ logInfoMessage "login to SCM"
 build_login_scm
 
 case "$ACTION" in
-  custom)
+  custom_comment)
     logInfoMessage "Selected action: $ACTION"
     custom_comment
     ;;
-  report)
+  ci_report)
     logInfoMessage "Selected action: $ACTION"
     report_comment
     ;;
