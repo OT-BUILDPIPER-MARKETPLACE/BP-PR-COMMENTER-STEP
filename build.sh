@@ -9,6 +9,16 @@ if [ "$DEBUG" = true ]; then
   set -x
 fi
 
+TASK_STATUS=0
+
+CODEBASE_LOCATION="${WORKSPACE}"/"${CODEBASE_DIR}"
+logInfoMessage "I'll do processing at [$CODEBASE_LOCATION]"
+sleep  $SLEEP_DURATION
+cd  "${CODEBASE_LOCATION}"
+
+logInfoMessage "login to SCM"
+build_login_scm
+
 
 RESULT_JSON="/bp/execution_dir/$GLOBAL_TASK_ID/summary.json"
 IMAGE_CSV_FILE="/bp/execution_dir/$GLOBAL_TASK_ID/trivy_image.csv"
