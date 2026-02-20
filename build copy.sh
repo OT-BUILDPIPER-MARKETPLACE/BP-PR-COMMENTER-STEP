@@ -8,7 +8,15 @@ source ./git_bulid_login.sh
 if [ "$DEBUG" = true ]; then
   set -x
 fi
+TASK_STATUS=0
 
+CODEBASE_LOCATION="${WORKSPACE}"/"${CODEBASE_DIR}"
+logInfoMessage "I'll do processing at [$CODEBASE_LOCATION]"
+sleep  $SLEEP_DURATION
+cd  "${CODEBASE_LOCATION}"
+
+logInfoMessage "login to SCM"
+build_login_scm
 
 RESULT_JSON="/bp/execution_dir/$GLOBAL_TASK_ID/summary.json"
 IMAGE_CSV_FILE="/bp/execution_dir/$GLOBAL_TASK_ID/trivy_image.csv"
@@ -20,47 +28,31 @@ BUILD_NUMBER=$(jq -r '.build_number' /bp/data/environment_build)
 
 sleep $SLEEP_DURATION
 
+get_status() {
+  jq -r --arg key "$1" '
+    .[]
+    | select(has($key))
+    | .[$key].status
+  ' "$RESULT_JSON" | tail -n 1
+}
 
 convert_status() {
-value=$(echo "$1" | tr '[:upper:]' '[:lower:]')
-
-if [[ "$value" == "true" || "$value" == "successful" ]]; then
+  if [[ "$1" == "true" ]]; then
     echo "PASS"
   else
     echo "FAIL"
   fi
 }
 
-STAGE_REPORT=""
-TOTAL_PASS=0
-TOTAL_FAIL=0
-
-if [[ -f "$RESULT_JSON" ]]; then
-
-  while read -r stage; do
-
-    STAGE_NAME=$(echo "$stage" | jq -r 'keys[0]')
-    STATUS_RAW=$(echo "$stage" | jq -r '.[].status')
-
-    FINAL_STATUS=$(convert_status "$STATUS_RAW")
-
-    if [[ "$FINAL_STATUS" == "PASS" ]]; then
-      ((TOTAL_PASS++))
-    else
-      ((TOTAL_FAIL++))
-    fi
-
-    STAGE_REPORT="${STAGE_REPORT}${STAGE_NAME} : ${FINAL_STATUS}\n"
-
-  done < <(jq -c '.[]' "$RESULT_JSON")
-
-else
-  STAGE_REPORT="No summary.json found\n"
-fi
-
-STAGE_REPORT=$(echo -e "$STAGE_REPORT")
-
-
+CLONE_STATUS=$(convert_status "$(get_status "cloning_repository")")
+CRED_STATUS=$(convert_status "$(get_status "Cred_Scanning_nr")")
+SONAR_STATUS=$(convert_status "$(get_status "sonar_scan")")
+TRIVY_FS_STATUS=$(convert_status "$(get_status "trivy-file-syetem-scan")")
+TRIVY_IMG_STATUS=$(convert_status "$(get_status "Trivy-Image-Scan")")
+SBOM_GEN_STATUS=$(convert_status "$(get_status "Trivy-Sbom-Generate")")
+SBOM_SCAN_STATUS=$(convert_status "$(get_status "Trivy-Sbom-Scan")")
+IMAGE_LAYER_STATUS=$(convert_status "$(get_status "IMAGE_LAYER_VALIDATOR")")
+IMAGE_SIZE_STATUS=$(convert_status "$(get_status "IMAGE_SIZE_VALIDATOR")")
 
 if [[ -f "$GIT_LEAKS_FILE" ]]; then
   TOTAL_LEAKS=$(tail -n 1 "$GIT_LEAKS_FILE")
@@ -88,31 +80,34 @@ else
   LOW=""
 fi
 
-COMMENT="CI Report from BUILDPIPER
+COMMENT="CI Report from BUILDPIPER 
 
 \`\`\`
-------------------------------------------------
+---------
 Build No : ${BUILD_NUMBER}
-
-Stage Summary
-${STAGE_REPORT}
-Docker Build     : ${DOCKER_STATUS}
+Repository Clone : ${CLONE_STATUS}
+Credential Scan : ${CRED_STATUS}
 Credential Leaks : ${TOTAL_LEAKS}
-
-Total PASS : ${TOTAL_PASS}
-Total FAIL : ${TOTAL_FAIL}
+Sonar Scan : ${SONAR_STATUS}
+Trivy FS Scan : ${TRIVY_FS_STATUS}
+Docker Build : ${DOCKER_STATUS}
+Trivy Image Scan : ${TRIVY_IMG_STATUS}
+SBOM Generate : ${SBOM_GEN_STATUS}
+SBOM Scan : ${SBOM_SCAN_STATUS}
+Image Layer Validator : ${IMAGE_LAYER_STATUS}
+Image Size Validator : ${IMAGE_SIZE_STATUS}
 
 Vulnerability Summary
 CRITICAL : ${CRITICAL}
 HIGH     : ${HIGH}
 MEDIUM   : ${MEDIUM}
 LOW      : ${LOW}
-------------------------------------------------
+---------
 \`\`\`"
 
-echo "--------------------------------"
-echo "$COMMENT"
-echo "--------------------------------"
+logInfoMessage "--------------------------------"
+logInfoMessage "$COMMENT"
+logInfoMessage "--------------------------------"
 
 
 detect_scm() {
@@ -133,9 +128,6 @@ if [ "$SCM_TYPE" = "github" ]; then
   logInfoMessage "Looking up GitHub PR using commit ${COMMIT_SHA}"
   logWarningMessage "GitHub PR lookup and comment posting is currently under development."
   exit 1
-
-  #PR_ID=$(echo "$RESPONSE" | jq -r '.number // empty')
-
 
   elif [ "$SCM_TYPE" = "bitbucket" ]; then
     logInfoMessage "Looking up Bitbucket PR using commit ${COMMIT_SHA}"
