@@ -7,6 +7,7 @@ source /opt/buildpiper/shell-functions/functions.sh
 if [ "$DEBUG" = true ]; then
   set -x
 fi
+TASK_STATUS=0
 report_comment() {
 
 RESULT_JSON="/bp/execution_dir/$GLOBAL_TASK_ID/summary.json"
@@ -166,6 +167,7 @@ if [ "$SCM_TYPE" = "github" ]; then
     fi
 
 fi
-
-saveTaskStatus ${TASK_STATUS} ${ACTIVITY_SUB_TASK_CODE}
 }
+
+TASK_STATUS=$?
+saveTaskStatus ${TASK_STATUS} ${ACTIVITY_SUB_TASK_CODE}
