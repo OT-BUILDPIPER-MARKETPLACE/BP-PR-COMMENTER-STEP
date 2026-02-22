@@ -165,9 +165,7 @@ if [ "$SCM_TYPE" = "github" ]; then
     else
       logErrorMessage "No PR found for commit ${COMMIT_SHA}"
     fi
-
 fi
-}
-
 TASK_STATUS=$?
 saveTaskStatus ${TASK_STATUS} ${ACTIVITY_SUB_TASK_CODE}
+}
