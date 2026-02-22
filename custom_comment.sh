@@ -8,6 +8,8 @@ if [ "$DEBUG" = true ]; then
   set -x
 fi
 
+TASK_STATUS=0
+
 custom_comment() {
 
 COMMIT_SHA=$(jq -r '.environment_variables.COMMIT_SHA' /bp/execution_dir/$GLOBAL_TASK_ID/cloning_repository_output.json)
