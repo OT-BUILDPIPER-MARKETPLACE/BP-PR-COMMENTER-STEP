@@ -99,9 +99,6 @@ ${STAGE_REPORT}
 Docker Build     : ${DOCKER_STATUS}
 Credential Leaks : ${TOTAL_LEAKS}
 
-Total PASS : ${TOTAL_PASS}
-Total FAIL : ${TOTAL_FAIL}
-
 Vulnerability Summary
 CRITICAL : ${CRITICAL}
 HIGH     : ${HIGH}
