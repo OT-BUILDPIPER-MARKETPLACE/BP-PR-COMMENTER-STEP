@@ -83,6 +83,5 @@ if [ "$SCM_TYPE" = "github" ]; then
     fi
 
 fi
-
-saveTaskStatus ${TASK_STATUS} ${ACTIVITY_SUB_TASK_CODE}
 }
+saveTaskStatus ${TASK_STATUS} ${ACTIVITY_SUB_TASK_CODE}
