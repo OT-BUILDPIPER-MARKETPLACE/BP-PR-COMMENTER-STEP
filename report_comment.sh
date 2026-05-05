@@ -128,11 +128,36 @@ detect_scm
 
 if [ "$SCM_TYPE" = "github" ]; then 
   logInfoMessage "Looking up GitHub PR using commit ${COMMIT_SHA}"
-  logWarningMessage "GitHub PR lookup and comment posting is currently under development."
-  exit 1
 
-  #PR_ID=$(echo "$RESPONSE" | jq -r '.number // empty')
+  PR_ID=$(curl -s \
+  -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+  -H "Accept: application/vnd.github.groot-preview+json" \
+  "https://api.github.com/repos/${OWNER}/${REPO}/commits/${COMMIT_SHA}/pulls" \
+  | jq -r '.[0].number // empty')
 
+logInfoMessage "PR_ID=$PR_ID"
+
+# Step 2: Prepare payload
+PAYLOAD=$(jq -n --arg body "$COMMENT" '{body:$body}')
+
+if [[ -n "$PR_ID" ]]; then
+  HTTP_CODE=$(curl -s -o response.json -w "%{http_code}" \
+    -X POST \
+    -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+    -H "Accept: application/vnd.github+json" \
+    -H "Content-Type: application/json" \
+    -d "$PAYLOAD" \
+    "https://api.github.com/repos/${OWNER}/${REPO}/issues/${PR_ID}/comments")
+
+  if [[ "$HTTP_CODE" == "201" ]]; then
+    logInfoMessage "Comment posted successfully"
+  else
+    logErrorMessage "Failed to post comment (HTTP $HTTP_CODE)"
+    cat response.json
+  fi
+else
+  logErrorMessage "No PR found for commit ${COMMIT_SHA}"
+fi
 
   elif [ "$SCM_TYPE" = "bitbucket" ]; then
     logInfoMessage "Looking up Bitbucket PR using commit ${COMMIT_SHA}"
