@@ -1,0 +1,3 @@
+image: registry.buildpiper.in/bp-impl/pr-commenter
+old_branch: nr_v0.1
+new_branch: nr_v0.2
