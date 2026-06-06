@@ -130,9 +130,9 @@ if [ "$SCM_TYPE" = "github" ]; then
   logInfoMessage "Looking up GitHub PR using commit ${COMMIT_SHA}"
 
   PR_ID=$(curl -s \
-  -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+  -H "Authorization: Bearer ${SCM_PASSWORD}" \
   -H "Accept: application/vnd.github.groot-preview+json" \
-  "https://api.github.com/repos/${OWNER}/${REPO}/commits/${COMMIT_SHA}/pulls" \
+  "https://api.github.com/repos/${SCM_PROJECT}/${REPO_NAME}/commits/${COMMIT_SHA}/pulls" \
   | jq -r '.[0].number // empty')
 
 logInfoMessage "PR_ID=$PR_ID"
@@ -143,11 +143,11 @@ PAYLOAD=$(jq -n --arg body "$COMMENT" '{body:$body}')
 if [[ -n "$PR_ID" ]]; then
   HTTP_CODE=$(curl -s -o response.json -w "%{http_code}" \
     -X POST \
-    -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+    -H "Authorization: Bearer ${SCM_PASSWORD}" \
     -H "Accept: application/vnd.github+json" \
     -H "Content-Type: application/json" \
     -d "$PAYLOAD" \
-    "https://api.github.com/repos/${OWNER}/${REPO}/issues/${PR_ID}/comments")
+    "https://api.github.com/repos/${SCM_PROJECT}/${REPO_NAME}/issues/${PR_ID}/comments")
 
   if [[ "$HTTP_CODE" == "201" ]]; then
     logInfoMessage "Comment posted successfully"
