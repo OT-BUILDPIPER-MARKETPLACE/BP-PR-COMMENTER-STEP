@@ -22,13 +22,17 @@ sleep $SLEEP_DURATION
 
 
 convert_status() {
-value=$(echo "$1" | tr '[:upper:]' '[:lower:]')
+    local value
+    value=$(echo "$1" | tr '[:upper:]' '[:lower:]' | xargs)
 
-if [[ "$value" == "true" || "$value" == "successful" ]]; then
-    echo "PASS"
-  else
-    echo "FAIL"
-  fi
+    case "$value" in
+        true|successful|success|passed|pass)
+            echo "PASS"
+            ;;
+        *)
+            echo "FAIL"
+            ;;
+    esac
 }
 
 STAGE_REPORT=""
@@ -40,7 +44,7 @@ if [[ -f "$RESULT_JSON" ]]; then
   while read -r stage; do
 
     STAGE_NAME=$(echo "$stage" | jq -r 'keys[0]')
-    STATUS_RAW=$(echo "$stage" | jq -r '.[].status')
+    STATUS_RAW=$(echo "$stage" | jq -r '.[keys[0]].status')
 
     FINAL_STATUS=$(convert_status "$STATUS_RAW")
 
@@ -69,7 +73,7 @@ else
 fi
 
 if [[ -f "$DOCKER_BUILD_FILE" ]]; then
-  DOCKER_STATUS_RAW=$(jq -r '.result.status' "$DOCKER_BUILD_FILE")
+  DOCKER_STATUS_RAW=$(jq -r '.status' "$DOCKER_BUILD_FILE")
 else
   DOCKER_STATUS_RAW="false"
 fi
@@ -128,11 +132,36 @@ detect_scm
 
 if [ "$SCM_TYPE" = "github" ]; then 
   logInfoMessage "Looking up GitHub PR using commit ${COMMIT_SHA}"
-  logWarningMessage "GitHub PR lookup and comment posting is currently under development."
-  exit 1
 
-  #PR_ID=$(echo "$RESPONSE" | jq -r '.number // empty')
+  PR_ID=$(curl -s \
+  -H "Authorization: Bearer ${SCM_PASSWORD}" \
+  -H "Accept: application/vnd.github.groot-preview+json" \
+  "https://api.github.com/repos/${SCM_PROJECT}/${REPO_NAME}/commits/${COMMIT_SHA}/pulls" \
+  | jq -r '.[0].number // empty')
 
+logInfoMessage "PR_ID=$PR_ID"
+
+# Step 2: Prepare payload
+PAYLOAD=$(jq -n --arg body "$COMMENT" '{body:$body}')
+
+if [[ -n "$PR_ID" ]]; then
+  HTTP_CODE=$(curl -s -o response.json -w "%{http_code}" \
+    -X POST \
+    -H "Authorization: Bearer ${SCM_PASSWORD}" \
+    -H "Accept: application/vnd.github+json" \
+    -H "Content-Type: application/json" \
+    -d "$PAYLOAD" \
+    "https://api.github.com/repos/${SCM_PROJECT}/${REPO_NAME}/issues/${PR_ID}/comments")
+
+  if [[ "$HTTP_CODE" == "201" ]]; then
+    logInfoMessage "Comment posted successfully"
+  else
+    logErrorMessage "Failed to post comment (HTTP $HTTP_CODE)"
+    cat response.json
+  fi
+else
+  logErrorMessage "No PR found for commit ${COMMIT_SHA}"
+fi
 
   elif [ "$SCM_TYPE" = "bitbucket" ]; then
     logInfoMessage "Looking up Bitbucket PR using commit ${COMMIT_SHA}"
