@@ -22,17 +22,13 @@ sleep $SLEEP_DURATION
 
 
 convert_status() {
-    local value
-    value=$(echo "$1" | tr '[:upper:]' '[:lower:]' | xargs)
+value=$(echo "$1" | tr '[:upper:]' '[:lower:]')
 
-    case "$value" in
-        true|successful|success|passed|pass)
-            echo "PASS"
-            ;;
-        *)
-            echo "FAIL"
-            ;;
-    esac
+if [[ "$value" == "true" || "$value" == "successful" ]]; then
+    echo "PASS"
+  else
+    echo "FAIL"
+  fi
 }
 
 STAGE_REPORT=""
@@ -44,7 +40,7 @@ if [[ -f "$RESULT_JSON" ]]; then
   while read -r stage; do
 
     STAGE_NAME=$(echo "$stage" | jq -r 'keys[0]')
-    STATUS_RAW=$(echo "$stage" | jq -r '.[keys[0]].status')
+    STATUS_RAW=$(echo "$stage" | jq -r '.[].status')
 
     FINAL_STATUS=$(convert_status "$STATUS_RAW")
 
@@ -73,7 +69,7 @@ else
 fi
 
 if [[ -f "$DOCKER_BUILD_FILE" ]]; then
-  DOCKER_STATUS_RAW=$(jq -r '.status' "$DOCKER_BUILD_FILE")
+  DOCKER_STATUS_RAW=$(jq -r '.result.status' "$DOCKER_BUILD_FILE")
 else
   DOCKER_STATUS_RAW="false"
 fi
